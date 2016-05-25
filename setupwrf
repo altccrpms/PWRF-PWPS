@@ -1,0 +1,12 @@
+#!/bin/bash
+#
+# setupwrf - Sets up the current directory to run WRF
+#
+
+# Links to data files
+ln -s /usr/share/WRFV3/run/* .
+
+# Default namelist.input if it doesn't exist
+[ ! -f namelist.input ] && cp -a /usr/share/WRFV3/test/em_real/namelist.input .
+
+exit 0

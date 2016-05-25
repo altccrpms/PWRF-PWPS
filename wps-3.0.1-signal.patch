@@ -1,0 +1,19 @@
+--- WPS/util/src/plotfmt.F.signal	2008-12-12 11:36:08.000000000 -0700
++++ WPS/util/src/plotfmt.F	2008-12-12 11:36:49.000000000 -0700
+@@ -21,15 +21,12 @@
+    integer, external :: graceful_stop
+ #if defined(_DOUBLEUNDERSCORE) && defined(MACOS)
+    ! we do not do any signaling
+-#else
+-   integer, external :: signal
+ #endif
+-   integer :: iii
+ 
+ #if defined(_DOUBLEUNDERSCORE) && defined(MACOS)
+   ! still more no signaling
+ #else
+-  iii = signal(2, graceful_stop, -1)
++  call signal(2, graceful_stop, -1)
+ #endif
+ 
+   call getarg(1,flnm)
