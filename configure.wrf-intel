@@ -104,44 +104,77 @@ LIBWRFLIB = libwrflib.a
 
 #### Architecture specific settings ####
 
-# Settings for    Linux x86_64 ppc64le, gfortran compiler with gcc   (dmpar)
+# Settings for    Linux x86_64 ppc64le i486 i586 i686, ifort compiler with icc  (dmpar)
 #
-DESCRIPTION     =       GNU ($SFC/$SCC)
+#        By default, some files are compiled without optimizations to speed up compilation. Removing
+#        respective makefile rules in the end of this file will result in longer compilation time, and, possibly
+#        Out Of Memory messages, but might produce binaries which are substantially faster.
+#
+#        Please visit http://www.intel.com/support/performancetools/sb/cs-028607.htm 
+#        for latest info on how to build WRF with Intel compilers.
+#
+#        If you got Out Of Memory message, there are several options:
+#          1. Check your memory limits (ulimit -a), possibly increasing swap partitions size.
+#          2. Remove any debugging flags (-g, -check, -traceback).
+#          3. Force the problematic file to be compiled with less optimizations (see examples at the 
+#             end of this file), try -no-ip compiler flag.
+#
+#        This configuration is aimed at accuracy. To improve performance (at the expence of accuracy) you might
+#        consider removing '-fp-model precise' flag from FCBASEOPTS. This enables non value-safe optimizations.
+#        Another option is to add '-ftz' flag, which flushes denormal results to zero when the application is in
+#        the gradual underflow mode. It may improve performance if the denormal values are not critical to the
+#        behavior of your workload. To further improve performance, add suitable vectorization options for your
+#        processor to FCOPTIM (see ifort manpage).
+#
+#        If you have Intel MPI installed and wish to use instead, make the
+#        following changes to settings below:
+#        DM_FC  = mpiifort
+#        DM_CC  = mpiicc
+#        and source bin64/mpivars.sh file from your Intel MPI installation
+#        before the build.
+#
+#        Suggestions for timing improvements from Craig Mattocks
+#
+#CFLAGS_LOCAL    =       -w -O3 -ip -fp-model precise -w -ftz -align all -fno-alias $(FORMAT_FREE) $(BYTESWAPIO) #-xHost -fp-model fast=2 -no-prec-div -no-prec-sqrt -ftz -no-multibyte-chars 
+#LDFLAGS_LOCAL   =       -ip -fp-model precise -w -ftz -align all -fno-alias $(FORMAT_FREE) $(BYTESWAPIO) #-xHost -fp-model fast=2 -no-prec-div -no-prec-sqrt -ftz -align all -fno-alias -fno-common 
+#FCBASEOPTS_NO_G =       -w -ip -fp-model precise -w -ftz -align all -fno-alias $(FORMAT_FREE) $(BYTESWAPIO) #-xHost -fp-model fast=2 -no-heap-arrays -no-prec-div -no-prec-sqrt -ftz -align all -fno-alias -fno-common $(FORMAT_FREE) $(BYTESWAPIO)
+
+DESCRIPTION     =       INTEL ($SFC/$SCC)
 DMPARALLEL      =        1
 OMPCPP          =       # -D_OPENMP
-OMP             =       # -fopenmp
-OMPCC           =       # -fopenmp
-SFC             =       gfortran
-SCC             =       gcc
-CCOMP           =       gcc
-DM_FC           =       mpif90
-DM_CC           =       mpicc -DMPI2_SUPPORT
+OMP             =       # -openmp -fpp -auto
+OMPCC           =       # -openmp -fpp -auto
+SFC             =       ifort
+SCC             =       icc
+CCOMP           =       icc
+DM_FC           =       mpif90 -f90=$(SFC)
+DM_CC           =       mpicc -cc=$(SCC) -DMPI2_SUPPORT
 FC              =       time $(DM_FC)
 CC              =       $(DM_CC) -DFSEEKO64_OK 
 LD              =       $(FC)
 RWORDSIZE       =       $(NATIVE_RWORDSIZE)
-PROMOTION       =       #-fdefault-real-8
-ARCH_LOCAL      =       -DNONSTANDARD_SYSTEM_SUBR  -DWRF_USE_CLM
-CFLAGS_LOCAL    =       -w -O3 -c 
-LDFLAGS_LOCAL   =       
+PROMOTION       =       -real-size `expr 8 \* $(RWORDSIZE)` -i4
+ARCH_LOCAL      =       -DNONSTANDARD_SYSTEM_FUNC  -DWRF_USE_CLM
+CFLAGS_LOCAL    =       -w -O3 -ip -axSSE3,SSSE3,SSE4.1,SSE4.2,CORE-AVX2,COMMON-AVX512 #-xHost -fp-model fast=2 -no-prec-div -no-prec-sqrt -ftz -no-multibyte-chars
+LDFLAGS_LOCAL   =       -ip #-xHost -fp-model fast=2 -no-prec-div -no-prec-sqrt -ftz -align all -fno-alias -fno-common
 CPLUSPLUSLIB    =       
 ESMF_LDFLAG     =       $(CPLUSPLUSLIB)
-FCOPTIM         =       -O2 -ftree-vectorize -funroll-loops
+FCOPTIM         =       -O3 -axSSE3,SSSE3,SSE4.1,SSE4.2,CORE-AVX2,COMMON-AVX512
 FCREDUCEDOPT	=       $(FCOPTIM)
-FCNOOPT		=       -O0
-FCDEBUG         =       # -g $(FCNOOPT) # -ggdb -fbacktrace -fcheck=bounds,do,mem,pointer -ffpe-trap=invalid,zero,overflow
-FORMAT_FIXED    =       -ffixed-form
-FORMAT_FREE     =       -ffree-form -ffree-line-length-none
-FCSUFFIX        =       
-BYTESWAPIO      =       -fconvert=big-endian -frecord-marker=4
-FCBASEOPTS_NO_G =       -w $(FORMAT_FREE) $(BYTESWAPIO)
+FCNOOPT		=       -O0 -fno-inline -no-ip
+FCDEBUG         =       # -g $(FCNOOPT) -traceback # -fpe0 -check noarg_temp_created,bounds,format,output_conversion,pointers,uninit -ftrapuv -unroll0 -u
+FORMAT_FIXED    =       -FI
+FORMAT_FREE     =       -FR
+FCSUFFIX        =
+BYTESWAPIO      =       -convert big_endian
+FCBASEOPTS_NO_G =       -ip -fp-model precise -w -ftz -align all -fno-alias $(FORMAT_FREE) $(BYTESWAPIO) #-xHost -fp-model fast=2 -no-heap-arrays -no-prec-div -no-prec-sqrt -fno-common
 FCBASEOPTS      =       $(FCBASEOPTS_NO_G) $(FCDEBUG)
 MODULE_SRCH_FLAG =     
 TRADFLAG        =      -traditional
 CPP             =      /lib/cpp -P
 AR              =      ar
 ARFLAGS         =      ru
-M4              =      m4 -G
+M4              =      m4
 RANLIB          =      ranlib
 RLFLAGS		=	
 CC_TOOLS        =      $(SCC) 

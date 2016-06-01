@@ -1,0 +1,8 @@
+#%Module 1.0
+#
+#  wrf environemnt module
+#
+conflict	wrf
+prepend-path 	PATH 		@PREFIX@/bin
+setenv		WRF_HOME	@PREFIX@
+setenv		WRF_DATA	@DATADIR@/WRFV3

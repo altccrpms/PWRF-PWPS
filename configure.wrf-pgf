@@ -92,7 +92,7 @@ OMP             =        -mp -Minfo=mp
 SFC             =       pgf90
 SCC             =       gcc
 DM_FC           =       mpif90
-DM_CC           =       mpicc -DMPI2_SUPPORT -DMPI2_THREAD_SUPPORT
+DM_CC           =       mpicc -DMPI2_SUPPORT
 FC              =        $(DM_FC)
 CC              =       $(DM_CC) -DFSEEKO64_OK 
 LD              =       $(FC)
@@ -172,7 +172,7 @@ LIB_BUNDLED     = \
                      $(WRF_SRC_ROOT_DIR)/frame/pack_utils.o 
 
 LIB_EXTERNAL    = \
-                     $(WRF_SRC_ROOT_DIR)/external/io_netcdf/libwrfio_nf.a -lnetcdf -lnetcdff `gcc -print-file-name=libgfortran.so` -L$(WRF_SRC_ROOT_DIR)/external/io_grib2 -lio_grib2 -ljasper
+                     $(WRF_SRC_ROOT_DIR)/external/io_netcdf/libwrfio_nf.a -lnetcdff -lnetcdf `gcc -print-file-name=libgfortran.so` -L$(WRF_SRC_ROOT_DIR)/external/io_grib2 -lio_grib2 -ljasper
 
 LIB             =    $(LIB_BUNDLED) $(LIB_EXTERNAL) $(LIB_LOCAL)
 LDFLAGS         =    $(OMP) $(FCFLAGS) $(LDFLAGS_LOCAL) 

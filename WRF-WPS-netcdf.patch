@@ -1,16 +1,16 @@
-diff -up WRF-WPS-3.3.1/WRFV3/external/io_netcdf/makefile.netcdf WRF-WPS-3.3.1/WRFV3/external/io_netcdf/makefile
---- WRF-WPS-3.3.1/WRFV3/external/io_netcdf/makefile.netcdf	2009-09-11 12:08:33.000000000 -0600
-+++ WRF-WPS-3.3.1/WRFV3/external/io_netcdf/makefile	2012-05-31 16:17:31.403013869 -0600
-@@ -49,11 +49,7 @@ diffwrf:                diffwrf.F90
+diff -up WRF-WPS-3.8-3.8/WRFV3/external/io_netcdf/makefile.netcdf WRF-WPS-3.8-3.8/WRFV3/external/io_netcdf/makefile
+--- WRF-WPS-3.8-3.8/WRFV3/external/io_netcdf/makefile.netcdf	2016-05-25 15:35:32.663036706 -0600
++++ WRF-WPS-3.8-3.8/WRFV3/external/io_netcdf/makefile	2016-05-25 15:36:21.891821308 -0600
+@@ -50,11 +50,7 @@ diffwrf:                diffwrf.F90
  	$(FC) -c $(FFLAGS) diffwrf.f
- 	@if [ \( -f ../../frame/wrf_debug.o \) -a \( -f ../../frame/module_wrf_error.o \) -a \( -f $(ESMF_MOD_DEPENDENCE) \) ] ; then \
+ 	@if [ \( -f ../../frame/wrf_debug.o \) -a \( -f ../../frame/module_wrf_error.o \) -a \( -f $(ESMF_MOD_DEPENDENCE) \) -a \( -f ../../frame/clog.o \) ] ; then \
  	  echo "diffwrf io_netcdf is being built now. " ; \
--          if [ -f $(NETCDFPATH)/lib/libnetcdff.a ] ; then \
--            $(FC) $(FFLAGS) $(LDFLAGS) -o diffwrf diffwrf.o $(OBJSL) ../../frame/wrf_debug.o ../../frame/module_wrf_error.o $(ESMF_IO_LIB_EXT) $(LIBS) -lnetcdff ;\
+-          if [ \( -f $(NETCDFPATH)/lib/libnetcdff.a -o -f $(NETCDFPATH)/lib/libnetcdff.so \) ] ; then \
+-            $(FC) $(FFLAGS) $(LDFLAGS) -o diffwrf diffwrf.o $(OBJSL) ../../frame/wrf_debug.o ../../frame/module_wrf_error.o ../../frame/clog.o $(ESMF_IO_LIB_EXT) $(LIBFFS) ;\
 -          else \
--            $(FC) $(FFLAGS) $(LDFLAGS) -o diffwrf diffwrf.o $(OBJSL) ../../frame/wrf_debug.o ../../frame/module_wrf_error.o $(ESMF_IO_LIB_EXT) $(LIBS) ;\
+-            $(FC) $(FFLAGS) $(LDFLAGS) -o diffwrf diffwrf.o $(OBJSL) ../../frame/wrf_debug.o ../../frame/module_wrf_error.o ../../frame/clog.o $(ESMF_IO_LIB_EXT) $(LIBS) ;\
 -          fi ; \
-+          $(FC) $(FFLAGS) $(LDFLAGS) -o diffwrf diffwrf.o $(OBJSL) ../../frame/wrf_debug.o ../../frame/module_wrf_error.o $(ESMF_IO_LIB_EXT) $(LIBS) -lnetcdff ;\
++          $(FC) $(FFLAGS) $(LDFLAGS) -o diffwrf diffwrf.o $(OBJSL) ../../frame/wrf_debug.o ../../frame/module_wrf_error.o ../../frame/clog.o $(ESMF_IO_LIB_EXT) $(LIBFFS) ;\
          else \
  	   echo "***************************************************************************** " ; \
  	   echo "*** Rerun compile to make diffwrf in external/io_netcdf directory         *** " ; \
