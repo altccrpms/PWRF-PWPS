@@ -106,6 +106,9 @@ rm %{buildroot}%{_datadir}/WRFV3/test/em_real/*.exe
 popd
 pushd WPS
 cp -a */src/*.exe %{buildroot}%{_bindir}
+mkdir -p %{buildroot}%{_datadir}/WRFV3/{geogrid,metgrid}
+cp -a geogrid/*TBL* geogrid/gribmap.txt %{buildroot}%{_datadir}/WRFV3/geogrid
+cp -a metgrid/*TBL* metgrid/gribmap.txt %{buildroot}%{_datadir}/WRFV3/metgrid
 popd
 sed -e s,@DATADIR@,%{_datadir},g < %SOURCE20 > %{buildroot}%{_bindir}/setupwrf
 chmod +x %{buildroot}%{_bindir}/setupwrf
@@ -123,11 +126,14 @@ chmod +x %{buildroot}%{_bindir}/setupwrf
 %{_bindir}/real.exe
 %{_bindir}/wrf.exe
 %{_bindir}/setupwrf
-%{_datadir}/WRFV3
+%dir %{_datadir}/WRFV3
+%{_datadir}/WRFV3/run/
+%{_datadir}/WRFV3/test/
+
 
 %files -n WPS%{?altcc_pkg_suffix}
 #doc
-%{?altcc:%altcc_files %{_bindir}}
+%{?altcc:%altcc_files %{_bindir} %{_datadir}}
 %{_bindir}/avg_tsfc.exe
 %{_bindir}/calc_ecmwf_p.exe
 %{_bindir}/g1print.exe
@@ -137,13 +143,16 @@ chmod +x %{buildroot}%{_bindir}/setupwrf
 %{_bindir}/int2nc.exe
 %{_bindir}/metgrid.exe
 %{_bindir}/mod_levs.exe
-# Need NCL compiled for intel first
-%if "%{altcc_cc_name}" != "intel"
+# Need NCL compiled for intel/pgf first
+%if "%{?altcc_cc_name}" == ""
 %{_bindir}/plotfmt.exe
 %{_bindir}/plotgrids.exe
 %endif
 %{_bindir}/rd_intermediate.exe
 %{_bindir}/ungrib.exe
+%dir %{_datadir}/WRFV3
+%{_datadir}/WRFV3/geogrid/
+%{_datadir}/WRFV3/metgrid/
 
 
 %changelog
