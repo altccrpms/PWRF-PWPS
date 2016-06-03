@@ -15,15 +15,10 @@
 
 SHELL           	=       /bin/sh
 
-COMPRESSION_LIBS	=	-ljasper -lpng -lz
-
-COMPRESSION_INC		=	
-
 NCARG_LIBS		=	-L$(NCARG_LIB) -lncarg -lncarg_gks -lncarg_c \
-				`gcc -print-file-name=libgfortran.so` \
-				-lX11
+				-lcairo -lfreetype -L/usr/X11R6/lib -lX11
 
-NCARG_LIBS2		=
+NCARG_LIBS2		=	# May be overridden by architecture specific value below
 
 FDEFS			=	-DUSE_JPEG2000 -DUSE_PNG
 
@@ -38,30 +33,53 @@ RANLIB			=	echo
 
 WRF_DIR			=	../WRFV3
 
+WRF_INCLUDE     =       -I$(WRF_DIR)/external/io_netcdf \
+                        -I$(WRF_DIR)/external/io_grib_share \
+                        -I$(WRF_DIR)/external/io_grib1 \
+                        -I$(WRF_DIR)/external/io_int \
+                        -I$(WRF_DIR)/inc \
+                        -I$(NETCDF)/include
+
+WRF_LIB         =       -L$(WRF_DIR)/external/io_grib1 -lio_grib1 \
+                        -L$(WRF_DIR)/external/io_grib_share -lio_grib_share \
+                        -L$(WRF_DIR)/external/io_int -lwrfio_int \
+                        -L$(WRF_DIR)/external/io_netcdf -lwrfio_nf \
+                        -L$(NETCDF)/lib -lnetcdff -lnetcdf
+
 #### Architecture specific settings ####
 
-# Settings for PC Linux x86_64 (IA64 and Opteron), PGI compiler 5.2 or higher, serial
-#
-COMPRESSION_LIBS        =       -L/contrib/jasper/lib -ljasper \
-				-L/contrib/libpng/lib -lpng \
-				-L/contrib/zlib/lib -lz
-COMPRESSION_INC		=	-I/contrib/zlib/include \
-				-I/contrib/jasper/include \
-				-I/contrib/libpng/include
-FC		=	pgf90
-SFC		=	pgf90
-FFLAGS		=	-Mfree -byteswapio -O
-F77FLAGS	=	-Mfixed -byteswapio -O
-FNGFLAGS	=	$(FFLAGS)
-LDFLAGS		=	
-CC		=	gcc
-SCC		=	gcc
-CFLAGS		=	-O
-CPP		=	/lib/cpp -C -P -traditional
-CPPFLAGS	=	-D_UNDERSCORE -DBYTESWAP -DLINUX -DIO_NETCDF -DIO_BINARY -DIO_GRIB1 -DBIT32
-NCARG_LIBS2	=	-L${PGI}/linux86-64/5.2/lib -lpgftnrtl -lpgc
+COMPRESSION_LIBS	=  # intentionally left blank, fill in COMPRESSION_LIBS below
 
-###########################################################
+COMPRESSION_INC		=  # intentionally left blank, fill in COMPRESSION_INC below
+
+#
+#   Settings for Linux x86_64, PGI compiler   (serial) 
+#
+#
+COMPRESSION_LIBS    = -L/opt/local/lib -ljasper -lpng -lz
+COMPRESSION_INC     = -I/opt/local/include
+FDEFS               = -DUSE_JPEG2000 -DUSE_PNG
+NCARG_LIBS2         = -L${PGI}/linux86-64/5.2/lib -lpgftnrtl -lpgc \
+                      -L/usr/lib64 -lg2c
+SFC                 = pgf90
+SCC                 = gcc
+DM_FC               = mpif90
+DM_CC               = mpicc
+FC                  = $(SFC)
+CC                  = $(SCC)
+LD                  = $(FC) 
+FFLAGS              = -Mfree -byteswapio -O
+F77FLAGS            = -Mfixed -byteswapio -O
+FCSUFFIX            = 
+FNGFLAGS            = $(FFLAGS)
+LDFLAGS             = 
+CFLAGS              = -O
+CPP                 = /lib/cpp -P -traditional
+CPPFLAGS            = -D_UNDERSCORE -DBYTESWAP -DLINUX -DIO_NETCDF -DIO_BINARY -DIO_GRIB1 -DBIT32 
+ARFLAGS             =
+CC_TOOLS            = 
+
+########################################################################################################################
 #
 #	Macros, these should be generic for all machines
 
@@ -70,20 +88,6 @@ MAKE		=	make -i -r
 RM		= 	/bin/rm -f
 CP		= 	/bin/cp
 AR		=	ar ru
-
-WRF_INCLUDE	=	-I$(WRF_DIR)/external/io_netcdf \
-			-I$(WRF_DIR)/external/io_grib_share \
-			-I$(WRF_DIR)/external/io_grib1 \
-			-I$(WRF_DIR)/external/io_int \
-			-I$(WRF_DIR)/inc
-
-WRF_LIB         =       -L$(WRF_DIR)/external/io_grib1 -lio_grib1 \
-                        -L$(WRF_DIR)/external/io_grib_share -lio_grib_share \
-                        -L$(WRF_DIR)/external/io_int -lwrfio_int \
-                        -L$(WRF_DIR)/external/io_netcdf -lwrfio_nf \
-                        -L$(NETCDF)/lib -lnetcdff -lnetcdf \
-			`gcc -print-file-name=libgfortran.so`
-
 
 .IGNORE:
 .SUFFIXES: .c .f .F .o

@@ -31,8 +31,15 @@ MAX_DOMAINS	=	21
 
 #### DM buffer length for the configuration flags.
 
-CONFIG_BUF_LEN	=	32768
+CONFIG_BUF_LEN	=	65536
 
+#### Size of bitmasks (in 4byte integers) of stream masks for WRF I/O
+
+MAX_HISTORY = 25
+
+IWORDSIZE = 4
+DWORDSIZE = 8
+LWORDSIZE = 4
 
 ##############################################################################
 #### The settings in this section are defaults that may be overridden by the 
@@ -74,6 +81,22 @@ ESMF_IO_DEFS        =
 # select build target for external/io_esmf vs. external/esmf_time_f90
 ESMF_TARGET         = esmf_time
 
+# ESMFINCLUDEGOESHERE
+
+
+#### NETCDF4 pieces
+
+NETCDF4_IO_OPTS = -DUSE_NETCDF4_FEATURES -DWRFIO_NCD_LARGE_FILE_SUPPORT
+GPFS            =
+CURL            =
+HDF5            =
+ZLIB            =
+DEP_LIB_PATH    = 
+NETCDF4_DEP_LIB = $(DEP_LIB_PATH) $(HDF5) $(ZLIB) $(GPFS) $(CURL)
+
+# NETCDF4INCLUDEGOESHERE
+
+
 ##############################################################################
 
 LIBWRFLIB = libwrflib.a
@@ -81,50 +104,55 @@ LIBWRFLIB = libwrflib.a
 
 #### Architecture specific settings ####
 
-# To enable over-decompostion with dmpar and dm+sm compiles, 
-# add -DALLOW_OVERDECOMP to ARCH_LOCAL, below. (not recommended)
-
-# Settings for Linux x86_64, PGI compiler with gcc  (dm+sm)
+# Settings for    Linux x86_64 ppc64le i486 i586 i686, PGI compiler with gcc  (dmpar)
 #
+DESCRIPTION     =       PGI ($SFC/$SCC)
 DMPARALLEL      =        1
-OMPCPP          =        -D_OPENMP
-OMP             =        -mp -Minfo=mp
+OMPCPP          =       # -D_OPENMP
+OMP             =       # -mp -Minfo=mp -Mrecursive
+OMPCC           =       # -mp
 SFC             =       pgf90
 SCC             =       gcc
+CCOMP           =       gcc
 DM_FC           =       mpif90
 DM_CC           =       mpicc -DMPI2_SUPPORT
-FC              =        $(DM_FC)
+FC              =       time $(DM_FC)
 CC              =       $(DM_CC) -DFSEEKO64_OK 
 LD              =       $(FC)
 RWORDSIZE       =       $(NATIVE_RWORDSIZE)
 PROMOTION       =       -r$(RWORDSIZE) -i4
-ARCH_LOCAL      =       -DNONSTANDARD_SYSTEM_SUBR
+ARCH_LOCAL      =       -DNONSTANDARD_SYSTEM_SUBR  -DWRF_USE_CLM
 CFLAGS_LOCAL    =       -w -O3
 LDFLAGS_LOCAL   =       -Bstatic_pgi
 CPLUSPLUSLIB    =       
 ESMF_LDFLAG     =       $(CPLUSPLUSLIB)
-FCOPTIM         =       -fastsse -Mvect=noaltcode -Msmartalloc -Mprefetch=distance:8 -Mfprelaxed # -Minfo=all =Mneginfo=all
+FCOPTIM         =       -O3 -fastsse -Mvect=noaltcode -Msmartalloc -Mprefetch=distance:8 -Mfprelaxed # -Minfo=all =Mneginfo=all
 FCREDUCEDOPT	=       $(FCOPTIM)
 FCNOOPT		=       -O0
-FCDEBUG         =       # -g $(FCNOOPT)
+FCDEBUG         =       # -g $(FCNOOPT)  # -C -Ktrap=fp -traceback
 FORMAT_FIXED    =       -Mfixed
 FORMAT_FREE     =       -Mfree
 FCSUFFIX        =
 BYTESWAPIO      =       -byteswapio
-FCBASEOPTS      =       -w $(FCDEBUG) $(FORMAT_FREE) $(BYTESWAPIO)
+FCBASEOPTS_NO_G =       -w $(FORMAT_FREE) $(BYTESWAPIO) $(OMP)
+FCBASEOPTS      =       $(FCBASEOPTS_NO_G) $(FCDEBUG)
 MODULE_SRCH_FLAG =     -module $(WRF_SRC_ROOT_DIR)/main
 TRADFLAG        =      -traditional
-CPP             =      /lib/cpp -C -P
+CPP             =      /lib/cpp -P
 AR              =      ar
 ARFLAGS         =      ru
 M4              =      m4 -B 14000
 RANLIB          =      ranlib
-CC_TOOLS        =      $(SCC)
+RLFLAGS		=	
+CC_TOOLS        =      $(SCC) 
 
 ###########################################################
 ######################
+# POSTAMBLE
 
-ARCHFLAGS       =    $(COREDEFS) -DIWORDSIZE=4 -DDWORDSIZE=8 -DRWORDSIZE=$(RWORDSIZE) -DLWORDSIZE=4 \
+FGREP = fgrep -iq
+
+ARCHFLAGS       =    $(COREDEFS) -DIWORDSIZE=$(IWORDSIZE) -DDWORDSIZE=$(DWORDSIZE) -DRWORDSIZE=$(RWORDSIZE) -DLWORDSIZE=$(LWORDSIZE) \
                      $(ARCH_LOCAL) \
                      $(DA_ARCHFLAGS) \
                       -DDM_PARALLEL \
@@ -132,21 +160,30 @@ ARCHFLAGS       =    $(COREDEFS) -DIWORDSIZE=4 -DDWORDSIZE=8 -DRWORDSIZE=$(RWORD
                       -DNETCDF \
                        \
                        \
-                      -DGRIB2 \
                        \
                        \
                        \
+                       \
+                       \
+                       \
+                       \
+                       \
+                      -DUSE_ALLOCATABLES \
                       -DGRIB1 \
                       -DINTIO \
+                      -DKEEP_INT_AROUND \
                       -DLIMIT_ARGS \
                       -DCONFIG_BUF_LEN=$(CONFIG_BUF_LEN) \
                       -DMAX_DOMAINS_F=$(MAX_DOMAINS) \
+                      -DMAX_HISTORY=$(MAX_HISTORY) \
 		      -DNMM_NEST=$(WRF_NMM_NEST)
-CFLAGS          =    $(CFLAGS_LOCAL) -DDM_PARALLEL 
-FCFLAGS         =    $(FCOPTIM) $(FCBASEOPTS) $(OMP)
+CFLAGS          =    $(CFLAGS_LOCAL) -DDM_PARALLEL  \
+                      -DMAX_HISTORY=$(MAX_HISTORY) -DNMM_CORE=$(WRF_NMM_CORE)
+FCFLAGS         =    $(FCOPTIM) $(FCBASEOPTS)
 ESMF_LIB_FLAGS  =    
-ESMF_IO_LIB     =    $(WRF_SRC_ROOT_DIR)/external/esmf_time_f90/libesmf_time.a
-ESMF_IO_LIB_EXT =    -L$(WRF_SRC_ROOT_DIR)/external/esmf_time_f90/libesmf_time.a
+# ESMF 5 -- these are defined in esmf.mk, included above
+ ESMF_IO_LIB     =    -L$(WRF_SRC_ROOT_DIR)/external/esmf_time_f90 -lesmf_time
+ESMF_IO_LIB_EXT =    -L$(WRF_SRC_ROOT_DIR)/external/esmf_time_f90 -lesmf_time
 INCLUDE_MODULES =    $(MODULE_SRCH_FLAG) \
                      $(ESMF_MOD_INC) $(ESMF_LIB_FLAGS) \
                       -I$(WRF_SRC_ROOT_DIR)/main \
@@ -156,37 +193,42 @@ INCLUDE_MODULES =    $(MODULE_SRCH_FLAG) \
                       -I$(WRF_SRC_ROOT_DIR)/share \
                       -I$(WRF_SRC_ROOT_DIR)/phys \
                       -I$(WRF_SRC_ROOT_DIR)/chem -I$(WRF_SRC_ROOT_DIR)/inc \
-                       \
+                      -I$(NETCDFPATH)/include \
                       
 REGISTRY        =    Registry
+CC_TOOLS_CFLAGS = -DNMM_CORE=$(WRF_NMM_CORE)
 
-LIB_BUNDLED     = \
-                     -L$(WRF_SRC_ROOT_DIR)/external/fftpack/fftpack5 -lfftpack \
-                     -L$(WRF_SRC_ROOT_DIR)/external/io_grib1 -lio_grib1 \
-                     -L$(WRF_SRC_ROOT_DIR)/external/io_grib_share -lio_grib_share \
-                     -L$(WRF_SRC_ROOT_DIR)/external/io_int -lwrfio_int \
-                     $(ESMF_IO_LIB) \
-                     $(ESMF_IO_LIB) \
-                     $(WRF_SRC_ROOT_DIR)/external/RSL_LITE/librsl_lite.a \
-                     $(WRF_SRC_ROOT_DIR)/frame/module_internal_header_util.o \
-                     $(WRF_SRC_ROOT_DIR)/frame/pack_utils.o 
+ LIB_BUNDLED     = \
+                      $(WRF_SRC_ROOT_DIR)/external/fftpack/fftpack5/libfftpack.a \
+                      $(WRF_SRC_ROOT_DIR)/external/io_grib1/libio_grib1.a \
+                      $(WRF_SRC_ROOT_DIR)/external/io_grib_share/libio_grib_share.a \
+                      $(WRF_SRC_ROOT_DIR)/external/io_int/libwrfio_int.a \
+                      $(ESMF_IO_LIB) \
+                      $(WRF_SRC_ROOT_DIR)/external/RSL_LITE/librsl_lite.a \
+                      $(WRF_SRC_ROOT_DIR)/frame/module_internal_header_util.o \
+                      $(WRF_SRC_ROOT_DIR)/frame/pack_utils.o 
 
-LIB_EXTERNAL    = \
-                     $(WRF_SRC_ROOT_DIR)/external/io_netcdf/libwrfio_nf.a -lnetcdff -lnetcdf `gcc -print-file-name=libgfortran.so` -L$(WRF_SRC_ROOT_DIR)/external/io_grib2 -lio_grib2 -ljasper
+ LIB_EXTERNAL    = \
+                      -L$(WRF_SRC_ROOT_DIR)/external/io_netcdf -lwrfio_nf -lnetcdff -lnetcdf
 
-LIB             =    $(LIB_BUNDLED) $(LIB_EXTERNAL) $(LIB_LOCAL)
+LIB             =    $(LIB_BUNDLED) $(LIB_EXTERNAL) $(LIB_LOCAL) $(LIB_WRF_HYDRO)
 LDFLAGS         =    $(OMP) $(FCFLAGS) $(LDFLAGS_LOCAL) 
 ENVCOMPDEFS     =    
 WRF_CHEM	=	0 
 CPPFLAGS        =    $(ARCHFLAGS) $(ENVCOMPDEFS) -I$(LIBINCLUDE) $(TRADFLAG) 
 NETCDFPATH      =    /usr
+HDF5PATH        =    
+WRFPLUSPATH     =    
 PNETCDFPATH     =    
 
-bundled:  wrf_ioapi_includes wrfio_grib_share wrfio_grib1 wrfio_int esmf_time fftpack
-external:  wrfio_nf  wrfio_grib2 $(WRF_SRC_ROOT_DIR)/external/RSL_LITE/librsl_lite.a gen_comms_rsllite module_dm_rsllite $(ESMF_TARGET)
+bundled:  io_only 
+external: io_only $(WRF_SRC_ROOT_DIR)/external/RSL_LITE/librsl_lite.a gen_comms_rsllite module_dm_rsllite $(ESMF_TARGET)
+io_only:  esmf_time wrfio_nf   \
+	  wrf_ioapi_includes wrfio_grib_share wrfio_grib1 wrfio_int fftpack
+
 
 ######################
-externals: bundled external
+externals: io_only bundled external
 
 gen_comms_serial :
 	( /bin/rm -f $(WRF_SRC_ROOT_DIR)/tools/gen_comms.c )
@@ -205,51 +247,59 @@ module_dm_rsllite :
 
 wrfio_nf : 
 	( cd $(WRF_SRC_ROOT_DIR)/external/io_netcdf ; \
-          make NETCDFPATH="$(NETCDFPATH)" RANLIB="$(RANLIB)" CPP="$(CPP)" \
+          make $(J) NETCDFPATH="$(NETCDFPATH)" RANLIB="$(RANLIB)" CPP="$(CPP)" \
           CC="$(SCC)" CFLAGS="$(CFLAGS)" \
-          FC="$(SFC) $(PROMOTION) $(FCFLAGS)" TRADFLAG="$(TRADFLAG)" AR="$(AR)" ARFLAGS="$(ARFLAGS)" )
+          FC="$(SFC) $(PROMOTION) $(OMP) $(FCFLAGS)" TRADFLAG="$(TRADFLAG)" AR="$(AR)" ARFLAGS="$(ARFLAGS)" )
 
 wrfio_pnf : 
 	( cd $(WRF_SRC_ROOT_DIR)/external/io_pnetcdf ; \
-          make NETCDFPATH="$(PNETCDFPATH)" RANLIB="$(RANLIB)" CPP="$(CPP)" \
-          FC="$(FC) $(PROMOTION) $(FCFLAGS)" TRADFLAG="$(TRADFLAG)" AR="$(AR)" ARFLAGS="$(ARFLAGS)" )
+          make $(J) NETCDFPATH="$(PNETCDFPATH)" RANLIB="$(RANLIB)" CPP="$(CPP) $(ARCHFLAGS)" \
+          FC="$(FC) $(PROMOTION) $(OMP) $(FCFLAGS)" TRADFLAG="$(TRADFLAG)" AR="$(AR)" ARFLAGS="$(ARFLAGS)" )
 
 wrfio_grib_share :
 	( cd $(WRF_SRC_ROOT_DIR)/external/io_grib_share ; \
-          make CC="$(SCC)" CFLAGS="$(CFLAGS)" RM="$(RM)" RANLIB="$(RANLIB)" CPP="$(CPP)" \
+          make $(J) CC="$(SCC)" CFLAGS="$(CFLAGS)" RM="$(RM)" RANLIB="$(RANLIB)" CPP="$(CPP)" \
           FC="$(SFC) $(PROMOTION) -I. $(FCDEBUG) $(FCBASEOPTS) $(FCSUFFIX)" TRADFLAG="$(TRADFLAG)" AR="$(AR)" ARFLAGS="$(ARFLAGS)" archive) 
 
 wrfio_grib1 :
 	( cd $(WRF_SRC_ROOT_DIR)/external/io_grib1 ; \
-          make CC="$(SCC)" CFLAGS="$(CFLAGS)" RM="$(RM)" RANLIB="$(RANLIB)" CPP="$(CPP)" \
+          make $(J) CC="$(SCC)" CFLAGS="$(CFLAGS)" RM="$(RM)" RANLIB="$(RANLIB)" CPP="$(CPP)" \
           FC="$(SFC) $(PROMOTION) -I. $(FCDEBUG) $(FCBASEOPTS) $(FCSUFFIX)" TRADFLAG="$(TRADFLAG)" AR="$(AR)" ARFLAGS="$(ARFLAGS)" archive)
 
 wrfio_grib2 :
 	( cd $(WRF_SRC_ROOT_DIR)/external/io_grib2 ; \
-          make CC="$(SCC)" CFLAGS="$(CFLAGS) -I/usr/include/jasper" RM="$(RM)" RANLIB="$(RANLIB)" \
+          make $(J) CC="$(SCC)" CFLAGS="$(CFLAGS) " RM="$(RM)" RANLIB="$(RANLIB)" \
           CPP="$(CPP)" \
           FC="$(SFC) $(PROMOTION) -I. $(FCDEBUG) $(FCBASEOPTS) $(FCSUFFIX)" TRADFLAG="-traditional" AR="$(AR)" ARFLAGS="$(ARFLAGS)" \
           FIXED="$(FORMAT_FIXED)" archive)
 
 wrfio_int : 
 	( cd $(WRF_SRC_ROOT_DIR)/external/io_int ; \
-          make CC="$(CC)" RM="$(RM)" RANLIB="$(RANLIB)" CPP="$(CPP)" \
-          FC="$(SFC) $(PROMOTION) $(FCDEBUG) $(FCBASEOPTS)" \
-          TRADFLAG="$(TRADFLAG)" AR="$(AR)" ARFLAGS="$(ARFLAGS)" all )
+          make $(J) CC="$(CC)" CFLAGS_LOCAL="$(CFLAGS_LOCAL)" RM="$(RM)" RANLIB="$(RANLIB)" CPP="$(CPP)" \
+          FC="$(FC) $(PROMOTION) $(FCDEBUG) $(FCBASEOPTS) $(OMP)" FGREP="$(FGREP)" \
+          TRADFLAG="$(TRADFLAG)" AR="$(AR)" ARFLAGS="$(ARFLAGS)" ARCHFLAGS="$(ARCHFLAGS)" all )
 
 esmf_time : 
 	( cd $(WRF_SRC_ROOT_DIR)/external/esmf_time_f90 ; \
-          make FC="$(SFC) $(PROMOTION) $(FCDEBUG) $(FCBASEOPTS)" RANLIB="$(RANLIB)" \
+          make $(J) FC="$(SFC) $(PROMOTION) $(FCDEBUG) $(FCBASEOPTS)" RANLIB="$(RANLIB)" \
           CPP="$(CPP) -I$(WRF_SRC_ROOT_DIR)/inc -I. $(ARCHFLAGS) $(TRADFLAG)" AR="$(AR)" ARFLAGS="$(ARFLAGS)" )
 
 fftpack :
 	( cd $(WRF_SRC_ROOT_DIR)/external/fftpack/fftpack5 ; \
-          make FC="$(SFC)" FFLAGS="$(PROMOTION) $(FCDEBUG) $(FCBASEOPTS)" RANLIB="$(RANLIB)" AR="$(AR)" ARFLAGS="$(ARFLAGS)" )
+          make $(J) FC="$(SFC)" FFLAGS="$(PROMOTION) $(FCDEBUG) $(FCBASEOPTS)" RANLIB="$(RANLIB)" AR="$(AR)" \
+          ARFLAGS="$(ARFLAGS)" CPP="$(CPP)" CPPFLAGS="$(CPPFLAGS)" RM="$(RM)" )
+
+atm_ocn :
+	( cd $(WRF_SRC_ROOT_DIR)/external/atm_ocn ; \
+          make $(J) CC="$(SCC)" CFLAGS="$(CFLAGS) " RM="$(RM)" RANLIB="$(RANLIB)" \
+          CPP="$(CPP)" CPPFLAGS="$(CPPFLAGS)" \
+          FC="$(DM_FC) $(PROMOTION) -I. $(FCDEBUG) $(FCBASEOPTS) $(FCSUFFIX)" TRADFLAG="-traditional" AR="$(AR)" ARFLAGS="$(ARFLAGS)" \
+          FIXED="$(FORMAT_FIXED)" )
 
 $(WRF_SRC_ROOT_DIR)/external/RSL_LITE/librsl_lite.a :
-	( cd $(WRF_SRC_ROOT_DIR)/external/RSL_LITE ; make CC="$(CC) $(CFLAGS)" \
-          FC="$(FC) $(FCFLAGS) $(PROMOTION) $(BYTESWAPIO)" \
-          CPP="$(CPP) -I. $(ARCHFLAGS) $(TRADFLAG)" AR="$(AR)" ARFLAGS="$(ARFLAGS)" ;\
+	( cd $(WRF_SRC_ROOT_DIR)/external/RSL_LITE ; make $(J) CC="$(CC) $(CFLAGS)" \
+          FC="$(FC) $(FCFLAGS) $(OMP) $(PROMOTION) $(BYTESWAPIO)" \
+          CPP="$(CPP) -I. $(ARCHFLAGS) $(OMPCPP) $(TRADFLAG)" AR="$(AR)" ARFLAGS="$(ARFLAGS)" ;\
           $(RANLIB) $(WRF_SRC_ROOT_DIR)/external/RSL_LITE/librsl_lite.a )
 
 ######################
@@ -281,10 +331,16 @@ wrfio_esmf :
 
 .F.o:
 	$(RM) $@
-	$(SED_FTN) $*.F > $*.b 
-	$(CPP) -I$(WRF_SRC_ROOT_DIR)/inc $(CPPFLAGS) $*.b  > $*.f90
-	$(RM) $*.b
-	$(FC) -o $@ -c $(FCFLAGS) $(MODULE_DIRS) $(PROMOTION) $(FCSUFFIX) $*.f90
+	$(CPP) -I$(WRF_SRC_ROOT_DIR)/inc $(CPPFLAGS) $(OMPCPP) $*.F  > $*.bb
+	$(SED_FTN) $*.bb | $(CPP) $(TRADFLAG) > $*.f90
+	$(RM) $*.b $*.bb
+	@ if echo $(ARCHFLAGS) | $(FGREP) 'DVAR4D'; then \
+          echo COMPILING $*.F for 4DVAR ; \
+          $(WRF_SRC_ROOT_DIR)/var/build/da_name_space.pl $*.f90 > $*.f90.tmp ; \
+          mv $*.f90.tmp $*.f90 ; \
+        fi
+	$(FC) -o $@ -c $(FCFLAGS) $(OMP) $(MODULE_DIRS) $(PROMOTION) $(FCSUFFIX) $*.f90
+        
 
 .F.f90:
 	$(RM) $@
@@ -295,6 +351,10 @@ wrfio_esmf :
 .f90.o:
 	$(RM) $@
 	$(FC) -o $@ -c $(FCFLAGS) $(PROMOTION) $(FCSUFFIX) $*.f90
+
+setfeenv.o : setfeenv.c
+	$(RM) $@
+	$(CCOMP) -o $@ -c $(CFLAGS) $(OMPCC) $*.c
 
 .c.o:
 	$(RM) $@
@@ -309,16 +369,32 @@ wrfio_esmf :
 # mediation_interp_domain.o : mediation_interp_domain.F
 
 # compile these without high optimization to speed compile
+mediation_integrate.o : mediation_integrate.F
+track_driver.o : track_driver.F
 convert_nmm.o : convert_nmm.F
 init_modules_em.o : init_modules_em.F
 input_wrf.o : input_wrf.F
 module_io.o : module_io.F
 module_comm_dm.o : module_comm_dm.F
+module_comm_dm_0.o : module_comm_dm_0.F
+module_comm_dm_1.o : module_comm_dm_1.F
+module_comm_dm_2.o : module_comm_dm_2.F
+module_comm_dm_3.o : module_comm_dm_3.F
+module_comm_nesting_dm.o : module_comm_nesting_dm.F
 module_configure.o : module_configure.F
 module_dm.o : module_dm.F
 module_domain.o : module_domain.F
 module_domain_type.o : module_domain_type.F
-module_alloc_space.o : module_alloc_space.F
+module_alloc_space_0.o : module_alloc_space_0.F
+module_alloc_space_1.o : module_alloc_space_1.F
+module_alloc_space_2.o : module_alloc_space_2.F
+module_alloc_space_3.o : module_alloc_space_3.F
+module_alloc_space_4.o : module_alloc_space_4.F
+module_alloc_space_5.o : module_alloc_space_5.F
+module_alloc_space_6.o : module_alloc_space_6.F
+module_alloc_space_7.o : module_alloc_space_7.F
+module_alloc_space_8.o : module_alloc_space_8.F
+module_alloc_space_9.o : module_alloc_space_9.F
 module_tiles.o : module_tiles.F
 module_fddaobs_rtfdda.o : module_fddaobs_rtfdda.F
 module_initialize.o : module_initialize.F
@@ -330,60 +406,17 @@ module_initialize_real.o : module_initialize_real.F
 module_initialize_real.o: module_initialize_real.F
 module_initialize_squall2d_x.o : module_initialize_squall2d_x.F
 module_initialize_squall2d_y.o : module_initialize_squall2d_y.F
+module_initialize_scm_xy.o : module_initialize_scm_xy.F
 module_integrate.o : module_integrate.F
 module_io_mm5.o : module_io_mm5.F
 module_io_wrf.o : module_io_wrf.F
 module_si_io.o : module_si_io.F
+module_wps_io_arw.o : module_wps_io_arw.F
 module_state_description.o : module_state_description.F 
 output_wrf.o : output_wrf.F
 solve_interface.o : solve_interface.F
 start_domain.o : start_domain.F
-start_domain_nmm.o : start_domain_nmm.F
 start_em.o : start_em.F
-wrf_auxhist10in.o : wrf_auxhist10in.F
-wrf_auxhist10out.o : wrf_auxhist10out.F
-wrf_auxhist11in.o : wrf_auxhist11in.F
-wrf_auxhist11out.o : wrf_auxhist11out.F
-wrf_auxhist1in.o : wrf_auxhist1in.F
-wrf_auxhist1out.o : wrf_auxhist1out.F
-wrf_auxhist2in.o : wrf_auxhist2in.F
-wrf_auxhist2out.o : wrf_auxhist2out.F
-wrf_auxhist3in.o : wrf_auxhist3in.F
-wrf_auxhist3out.o : wrf_auxhist3out.F
-wrf_auxhist4in.o : wrf_auxhist4in.F
-wrf_auxhist4out.o : wrf_auxhist4out.F
-wrf_auxhist5in.o : wrf_auxhist5in.F
-wrf_auxhist5out.o : wrf_auxhist5out.F
-wrf_auxhist6in.o : wrf_auxhist6in.F
-wrf_auxhist6out.o : wrf_auxhist6out.F
-wrf_auxhist7in.o : wrf_auxhist7in.F
-wrf_auxhist7out.o : wrf_auxhist7out.F
-wrf_auxhist8in.o : wrf_auxhist8in.F
-wrf_auxhist8out.o : wrf_auxhist8out.F
-wrf_auxhist9in.o : wrf_auxhist9in.F
-wrf_auxhist9out.o : wrf_auxhist9out.F
-wrf_auxinput10in.o : wrf_auxinput10in.F
-wrf_auxinput10out.o : wrf_auxinput10out.F
-wrf_auxinput11in.o : wrf_auxinput11in.F
-wrf_auxinput11out.o : wrf_auxinput11out.F
-wrf_auxinput1in.o : wrf_auxinput1in.F
-wrf_auxinput1out.o : wrf_auxinput1out.F
-wrf_auxinput2in.o : wrf_auxinput2in.F
-wrf_auxinput2out.o : wrf_auxinput2out.F
-wrf_auxinput3in.o : wrf_auxinput3in.F
-wrf_auxinput3out.o : wrf_auxinput3out.F
-wrf_auxinput4in.o : wrf_auxinput4in.F
-wrf_auxinput4out.o : wrf_auxinput4out.F
-wrf_auxinput5in.o : wrf_auxinput5in.F
-wrf_auxinput5out.o : wrf_auxinput5out.F
-wrf_auxinput6in.o : wrf_auxinput6in.F
-wrf_auxinput6out.o : wrf_auxinput6out.F
-wrf_auxinput7in.o : wrf_auxinput7in.F
-wrf_auxinput7out.o : wrf_auxinput7out.F
-wrf_auxinput8in.o : wrf_auxinput8in.F
-wrf_auxinput8out.o : wrf_auxinput8out.F
-wrf_auxinput9in.o : wrf_auxinput9in.F
-wrf_auxinput9out.o : wrf_auxinput9out.F
 wrf_bdyin.o : wrf_bdyin.F
 wrf_bdyout.o : wrf_bdyout.F
 wrf_ext_read_field.o : wrf_ext_read_field.F
@@ -401,11 +434,11 @@ nl_get_1_routines.o : nl_get_1_routines.F
 nl_set_0_routines.o : nl_set_0_routines.F
 nl_set_1_routines.o : nl_set_1_routines.F
 
+mediation_integrate.o \
+track_driver.o \
 convert_nmm.o \
 init_modules_em.o \
-module_comm_dm.o \
 module_dm.o \
-module_alloc_space.o \
 module_fddaobs_rtfdda.o \
 module_initialize.o \
 module_initialize_b_wave.o \
@@ -414,15 +447,16 @@ module_initialize_quarter_ss.o \
 module_initialize_real.o \
 module_initialize_squall2d_x.o \
 module_initialize_squall2d_y.o \
+module_initialize_scm_xy.o \
 module_integrate.o \
 module_io_mm5.o \
 module_io_wrf.o \
 module_si_io.o \
+module_wps_io_arw.o \
 module_tiles.o \
 output_wrf.o \
 solve_interface.o \
 start_domain.o \
-start_domain_nmm.o \
 start_em.o \
 wrf_fddaobs_in.o \
 wrf_tsin.o :
@@ -430,7 +464,18 @@ wrf_tsin.o :
 	$(SED_FTN) $*.F > $*.b 
 	$(CPP) -I$(WRF_SRC_ROOT_DIR)/inc $(CPPFLAGS) $(OMPCPP) $*.b  > $*.f90
 	$(RM) $*.b
-	$(FC) -c $(PROMOTION) $(FCNOOPT) $(FCBASEOPTS) $(MODULE_DIRS) $(FCSUFFIX) $(OMP) $*.f90
+	@ if echo $(ARCHFLAGS) | $(FGREP) 'DVAR4D'; then \
+          echo COMPILING $*.F for 4DVAR ; \
+          $(WRF_SRC_ROOT_DIR)/var/build/da_name_space.pl $*.f90 > $*.f90.tmp ; \
+          mv $*.f90.tmp $*.f90 ; \
+        fi
+	if $(FGREP) '!$$OMP' $*.f90 ; then \
+          if [ -n "$(OMP)" ] ; then echo COMPILING $*.F WITH OMP ; fi ; \
+	  $(FC) -c $(PROMOTION) $(FCNOOPT) $(FCBASEOPTS) $(MODULE_DIRS) $(FCSUFFIX) $(OMP) $*.f90 ; \
+        else \
+          if [ -n "$(OMP)" ] ; then echo COMPILING $*.F WITHOUT OMP ; fi ; \
+	  $(FC) -c $(PROMOTION) $(FCNOOPT) $(FCBASEOPTS) $(MODULE_DIRS) $(FCSUFFIX) $*.f90 ; \
+        fi
 
 #solve_em.o :
 #	$(RM) $@
@@ -440,14 +485,20 @@ wrf_tsin.o :
 #	$(FC) -o $@ -c $(FCFLAGS) $(MODULE_DIRS) $(PROMOTION) $(FCSUFFIX) $(SOLVE_EM_SPECIAL) $(OMP) $*.f90
 
 module_sf_ruclsm.o : module_sf_ruclsm.F
-module_cu_kf.o : module_cu_kf.F
 
-module_sf_ruclsm.o module_cu_kf.o :
+module_sf_ruclsm.o :
 	$(RM) $@
 	$(SED_FTN) $*.F > $*.b 
 	$(CPP) -I$(WRF_SRC_ROOT_DIR)/inc $(CPPFLAGS) $(OMPCPP) $*.b  > $*.f90
 	$(RM) $*.b
-	$(FC) -c $(PROMOTION) $(FCREDUCEDOPT) $(FCBASEOPTS) $(MODULE_DIRS) $(FCSUFFIX) $(OMP) $*.f90
+	if $(FGREP) '!$$OMP' $*.f90 ; then \
+          echo COMPILING $*.F WITH OMP ; \
+          if [ -n "$(OMP)" ] ; then echo COMPILING $*.F WITH OMP ; fi ; \
+	  $(FC) -c $(PROMOTION) $(FCREDUCEDOPT) $(FCBASEOPTS) $(MODULE_DIRS) $(FCSUFFIX) $(OMP) $*.f90 ; \
+        else \
+          if [ -n "$(OMP)" ] ; then echo COMPILING $*.F WITHOUT OMP ; fi ; \
+	  $(FC) -c $(PROMOTION) $(FCREDUCEDOPT) $(FCBASEOPTS) $(MODULE_DIRS) $(FCSUFFIX) $*.f90 ; \
+        fi
 
 # compile without OMP
 input_wrf.o \
@@ -455,50 +506,6 @@ module_domain.o \
 module_domain_type.o \
 module_physics_init.o \
 module_io.o \
-wrf_auxhist10in.o \
-wrf_auxhist10out.o \
-wrf_auxhist11in.o \
-wrf_auxhist11out.o \
-wrf_auxhist1in.o \
-wrf_auxhist1out.o \
-wrf_auxhist2in.o \
-wrf_auxhist2out.o \
-wrf_auxhist3in.o \
-wrf_auxhist3out.o \
-wrf_auxhist4in.o \
-wrf_auxhist4out.o \
-wrf_auxhist5in.o \
-wrf_auxhist5out.o \
-wrf_auxhist6in.o \
-wrf_auxhist6out.o \
-wrf_auxhist7in.o \
-wrf_auxhist7out.o \
-wrf_auxhist8in.o \
-wrf_auxhist8out.o \
-wrf_auxhist9in.o \
-wrf_auxhist9out.o \
-wrf_auxinput10in.o \
-wrf_auxinput10out.o \
-wrf_auxinput11in.o \
-wrf_auxinput11out.o \
-wrf_auxinput1in.o \
-wrf_auxinput1out.o \
-wrf_auxinput2in.o \
-wrf_auxinput2out.o \
-wrf_auxinput3in.o \
-wrf_auxinput3out.o \
-wrf_auxinput4in.o \
-wrf_auxinput4out.o \
-wrf_auxinput5in.o \
-wrf_auxinput5out.o \
-wrf_auxinput6in.o \
-wrf_auxinput6out.o \
-wrf_auxinput7in.o \
-wrf_auxinput7out.o \
-wrf_auxinput8in.o \
-wrf_auxinput8out.o \
-wrf_auxinput9in.o \
-wrf_auxinput9out.o \
 wrf_bdyin.o \
 wrf_bdyout.o \
 wrf_ext_read_field.o \
@@ -510,13 +517,31 @@ wrf_inputout.o \
 wrf_restartin.o \
 wrf_restartout.o \
 module_state_description.o \
-nl_set_0_routines.o \
-nl_set_1_routines.o \
-nl_get_0_routines.o \
-nl_get_1_routines.o \
+module_alloc_space.o \
+module_alloc_space_0.o \
+module_alloc_space_1.o \
+module_alloc_space_2.o \
+module_alloc_space_3.o \
+module_alloc_space_4.o \
+module_alloc_space_5.o \
+module_alloc_space_6.o \
+module_alloc_space_7.o \
+module_alloc_space_8.o \
+module_alloc_space_9.o \
+module_comm_dm.o \
+module_comm_dm_0.o \
+module_comm_dm_1.o \
+module_comm_dm_2.o \
+module_comm_dm_3.o \
+module_comm_nesting_dm.o \
 module_configure.o :
 	$(RM) $@
-	$(SED_FTN) $*.F > $*.b 
-	$(CPP) -I$(WRF_SRC_ROOT_DIR)/inc $(CPPFLAGS) $(OMPCPP) $*.b  > $*.f90
-	$(RM) $*.b
+	$(CPP) -I$(WRF_SRC_ROOT_DIR)/inc $(CPPFLAGS) $(OMPCPP) $*.F  > $*.bb
+	$(SED_FTN) $*.bb | $(CPP) $(TRADFLAG) > $*.f90
+	@ if echo $(ARCHFLAGS) | $(FGREP) 'DVAR4D'; then \
+          echo COMPILING $*.F for 4DVAR ; \
+          $(WRF_SRC_ROOT_DIR)/var/build/da_name_space.pl $*.f90 > $*.f90.tmp ; \
+          mv $*.f90.tmp $*.f90 ; \
+        fi
+	$(RM) $*.b $*.bb
 	$(FC) -c $(PROMOTION) $(FCSUFFIX) $(FCNOOPT) $(FCBASEOPTS) $(MODULE_DIRS) $*.f90
