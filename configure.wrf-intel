@@ -155,11 +155,11 @@ LD              =       $(FC)
 RWORDSIZE       =       $(NATIVE_RWORDSIZE)
 PROMOTION       =       -real-size `expr 8 \* $(RWORDSIZE)` -i4
 ARCH_LOCAL      =       -DNONSTANDARD_SYSTEM_FUNC  -DWRF_USE_CLM
-CFLAGS_LOCAL    =       -w -O3 -ip -axSSE3,SSSE3,SSE4.1,SSE4.2,CORE-AVX2,COMMON-AVX512 #-xHost -fp-model fast=2 -no-prec-div -no-prec-sqrt -ftz -no-multibyte-chars
+CFLAGS_LOCAL    =       -w -O3 -ip -axSSE3,SSSE3,SSE4.1,SSE4.2,CORE-AVX2,COMMON-AVX512 -ipo #-xHost -fp-model fast=2 -no-prec-div -no-prec-sqrt -ftz -no-multibyte-chars
 LDFLAGS_LOCAL   =       -ip #-xHost -fp-model fast=2 -no-prec-div -no-prec-sqrt -ftz -align all -fno-alias -fno-common
 CPLUSPLUSLIB    =       
 ESMF_LDFLAG     =       $(CPLUSPLUSLIB)
-FCOPTIM         =       -O3 -axSSE3,SSSE3,SSE4.1,SSE4.2,CORE-AVX2,COMMON-AVX512
+FCOPTIM         =       -O3 -axSSE3,SSSE3,SSE4.1,SSE4.2,CORE-AVX2,COMMON-AVX512 -ipo
 FCREDUCEDOPT	=       $(FCOPTIM)
 FCNOOPT		=       -O0 -fno-inline -no-ip
 FCDEBUG         =       # -g $(FCNOOPT) -traceback # -fpe0 -check noarg_temp_created,bounds,format,output_conversion,pointers,uninit -ftrapuv -unroll0 -u
@@ -172,7 +172,7 @@ FCBASEOPTS      =       $(FCBASEOPTS_NO_G) $(FCDEBUG)
 MODULE_SRCH_FLAG =     
 TRADFLAG        =      -traditional
 CPP             =      /lib/cpp -P
-AR              =      ar
+AR              =      xiar
 ARFLAGS         =      ru
 M4              =      m4
 RANLIB          =      ranlib
@@ -226,7 +226,7 @@ INCLUDE_MODULES =    $(MODULE_SRCH_FLAG) \
                       -I$(WRF_SRC_ROOT_DIR)/share \
                       -I$(WRF_SRC_ROOT_DIR)/phys \
                       -I$(WRF_SRC_ROOT_DIR)/chem -I$(WRF_SRC_ROOT_DIR)/inc \
-                      -I$(NETCDFPATH)/include \
+                      -I$(NETCDF_INCLUDE) \
                       
 REGISTRY        =    Registry
 CC_TOOLS_CFLAGS = -DNMM_CORE=$(WRF_NMM_CORE)
@@ -242,14 +242,14 @@ CC_TOOLS_CFLAGS = -DNMM_CORE=$(WRF_NMM_CORE)
                       $(WRF_SRC_ROOT_DIR)/frame/pack_utils.o 
 
  LIB_EXTERNAL    = \
-                      -L$(WRF_SRC_ROOT_DIR)/external/io_netcdf -lwrfio_nf -lnetcdff -lnetcdf
+                      -L$(WRF_SRC_ROOT_DIR)/external/io_netcdf -lwrfio_nf -L$(NETCDF_LIB) -lnetcdff -lnetcdf
 
 LIB             =    $(LIB_BUNDLED) $(LIB_EXTERNAL) $(LIB_LOCAL) $(LIB_WRF_HYDRO)
 LDFLAGS         =    $(OMP) $(FCFLAGS) $(LDFLAGS_LOCAL) 
 ENVCOMPDEFS     =    
 WRF_CHEM	=	0 
 CPPFLAGS        =    $(ARCHFLAGS) $(ENVCOMPDEFS) -I$(LIBINCLUDE) $(TRADFLAG) 
-NETCDFPATH      =    /usr
+NETCDFPATH      =    $(NETCDF_HOME)
 HDF5PATH        =    
 WRFPLUSPATH     =    
 PNETCDFPATH     =    

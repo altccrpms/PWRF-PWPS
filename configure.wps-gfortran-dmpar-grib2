@@ -16,7 +16,7 @@
 SHELL           	=       /bin/sh
 
 NCARG_LIBS		=	-L$(NCARG_LIB) -lncarg -lncarg_gks -lncarg_c \
-				-L/usr/X11R6/lib -lX11
+				-lX11
 
 NCARG_LIBS2		=	# May be overridden by architecture specific value below
 
@@ -38,13 +38,13 @@ WRF_INCLUDE     =       -I$(WRF_DIR)/external/io_netcdf \
                         -I$(WRF_DIR)/external/io_grib1 \
                         -I$(WRF_DIR)/external/io_int \
                         -I$(WRF_DIR)/inc \
-                        -I$(NETCDF)/include
+                        -I$(NETCDF_INCLUDE)
 
 WRF_LIB         =       -L$(WRF_DIR)/external/io_grib1 -lio_grib1 \
                         -L$(WRF_DIR)/external/io_grib_share -lio_grib_share \
                         -L$(WRF_DIR)/external/io_int -lwrfio_int \
                         -L$(WRF_DIR)/external/io_netcdf -lwrfio_nf \
-                        -L$(NETCDF)/lib -lnetcdff -lnetcdf
+                        -L$(NETCDF_LIB) -lnetcdff -lnetcdf
 
 #### Architecture specific settings ####
 
@@ -56,8 +56,8 @@ COMPRESSION_INC		=  # intentionally left blank, fill in COMPRESSION_INC below
 #   Settings for Linux x86_64, gfortran    (dmpar) 
 #
 #
-COMPRESSION_LIBS    = -L/opt/local/lib -ljasper -lpng -lz
-COMPRESSION_INC     = -I/opt/local/include
+COMPRESSION_LIBS    = -ljasper -lpng -lz
+COMPRESSION_INC     =
 FDEFS               = -DUSE_JPEG2000 -DUSE_PNG
 SFC                 = gfortran
 SCC                 = gcc

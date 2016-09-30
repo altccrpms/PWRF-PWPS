@@ -1,6 +1,6 @@
 %global shortname WRF-WPS 
-%global ver 3.8
-%{?altcc_init:%altcc_init -n %{shortname} -v %{ver}}
+%global ver 3.8.1
+%?altcc_init
 
 Name:           %{shortname}%{?altcc_pkg_suffix}
 Version:        %{ver}
@@ -28,13 +28,16 @@ Patch2:         WRF-WPS-netcdf.patch
 
 BuildRequires:  tcsh
 BuildRequires:  m4
+%if !0%{?altcc}
 BuildRequires:  gcc-gfortran
+%endif
+BuildRequires:  hdf%{?altcc_cc_dep_suffix}-devel
 BuildRequires:  jasper-devel
 BuildRequires:  libpng-devel
-BuildRequires:  ncl-devel
+BuildRequires:  ncl%{?altcc_cc_dep_suffix}-devel
 BuildRequires:  netcdf-fortran%{?altcc_dep_suffix}-devel
 BuildRequires:  numactl-devel
-BuildRequires:  openmpi%{?altcc_cc_dep_suffix}-devel
+BuildRequires:  time
 
 %description
 WRF/WPS build.  They need to be built together which is why we have one
@@ -76,13 +79,17 @@ popd
 
 
 %build
-%{?altcc:module load hdf netcdf}
+%{?altcc:module load hdf ncl netcdf}
 # This is set by the openmpi module and interferes with the build
 unset MPI_LIB
-[ -z "${NETCDF}" ] && export NETCDF=%{_prefix}
+if [ -n "${NETCDF_HOME}" ]; then
+  export NETCDF=${NETCDF_HOME}
+else
+  export NETCDF=/usr
+fi
 export JASPERINC=/usr/include/jasper
 export JASPERLIB=/usr/%{_lib}
-export NCARG_LIB=%{_libdir}/ncarg
+export J=$(echo %{?_smp_mflags} | sed 's/-j/-j /')
 pushd WRFV3
 ./compile em_real
 popd
@@ -143,11 +150,8 @@ chmod +x %{buildroot}%{_bindir}/setupwrf
 %{_bindir}/int2nc.exe
 %{_bindir}/metgrid.exe
 %{_bindir}/mod_levs.exe
-# Need NCL compiled for intel/pgf first
-%if "%{?altcc_cc_name}" == ""
 %{_bindir}/plotfmt.exe
 %{_bindir}/plotgrids.exe
-%endif
 %{_bindir}/rd_intermediate.exe
 %{_bindir}/ungrib.exe
 %dir %{_datadir}/WRFV3
@@ -156,6 +160,14 @@ chmod +x %{buildroot}%{_bindir}/setupwrf
 
 
 %changelog
+* Thu Sep 29 2016 Orion Poplawski <orion@cora.nwra.com> 3.8.1-1
+- Update to 3.8.1
+- Compile with -ipo for Intel version
+- Increase parallel build cpus
+- Fixup some BuildRequires
+- Use NETCDF_* module variables for paths
+- Build with altcc ncl
+
 * Tue May 31 2016 Orion Poplawski <orion@cora.nwra.com> 3.8-1
 - Update to 3.8
 - Altccrpms style

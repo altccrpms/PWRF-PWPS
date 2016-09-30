@@ -193,7 +193,7 @@ INCLUDE_MODULES =    $(MODULE_SRCH_FLAG) \
                       -I$(WRF_SRC_ROOT_DIR)/share \
                       -I$(WRF_SRC_ROOT_DIR)/phys \
                       -I$(WRF_SRC_ROOT_DIR)/chem -I$(WRF_SRC_ROOT_DIR)/inc \
-                      -I$(NETCDFPATH)/include \
+                      -I$(NETCDF_INCLUDE) \
                       
 REGISTRY        =    Registry
 CC_TOOLS_CFLAGS = -DNMM_CORE=$(WRF_NMM_CORE)
@@ -209,14 +209,14 @@ CC_TOOLS_CFLAGS = -DNMM_CORE=$(WRF_NMM_CORE)
                       $(WRF_SRC_ROOT_DIR)/frame/pack_utils.o 
 
  LIB_EXTERNAL    = \
-                      -L$(WRF_SRC_ROOT_DIR)/external/io_netcdf -lwrfio_nf -lnetcdff -lnetcdf
+                      -L$(WRF_SRC_ROOT_DIR)/external/io_netcdf -lwrfio_nf -L$(NETCDF_LIB) -lnetcdff -lnetcdf
 
 LIB             =    $(LIB_BUNDLED) $(LIB_EXTERNAL) $(LIB_LOCAL) $(LIB_WRF_HYDRO)
 LDFLAGS         =    $(OMP) $(FCFLAGS) $(LDFLAGS_LOCAL) 
 ENVCOMPDEFS     =    
 WRF_CHEM	=	0 
 CPPFLAGS        =    $(ARCHFLAGS) $(ENVCOMPDEFS) -I$(LIBINCLUDE) $(TRADFLAG) 
-NETCDFPATH      =    /usr
+NETCDFPATH      =    $(NETCDF_HOME)
 HDF5PATH        =    
 WRFPLUSPATH     =    
 PNETCDFPATH     =    

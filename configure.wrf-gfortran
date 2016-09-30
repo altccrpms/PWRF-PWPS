@@ -138,7 +138,7 @@ FCBASEOPTS_NO_G =       -w $(FORMAT_FREE) $(BYTESWAPIO)
 FCBASEOPTS      =       $(FCBASEOPTS_NO_G) $(FCDEBUG)
 MODULE_SRCH_FLAG =     
 TRADFLAG        =      -traditional
-CPP             =      /lib/cpp -P
+CPP             =      cpp -P
 AR              =      ar
 ARFLAGS         =      ru
 M4              =      m4 -G
@@ -193,7 +193,7 @@ INCLUDE_MODULES =    $(MODULE_SRCH_FLAG) \
                       -I$(WRF_SRC_ROOT_DIR)/share \
                       -I$(WRF_SRC_ROOT_DIR)/phys \
                       -I$(WRF_SRC_ROOT_DIR)/chem -I$(WRF_SRC_ROOT_DIR)/inc \
-                      -I$(NETCDFPATH)/include \
+                      -I$(NETCDF_INCLUDE) \
                       
 REGISTRY        =    Registry
 CC_TOOLS_CFLAGS = -DNMM_CORE=$(WRF_NMM_CORE)
@@ -216,7 +216,7 @@ LDFLAGS         =    $(OMP) $(FCFLAGS) $(LDFLAGS_LOCAL)
 ENVCOMPDEFS     =    
 WRF_CHEM	=	0 
 CPPFLAGS        =    $(ARCHFLAGS) $(ENVCOMPDEFS) -I$(LIBINCLUDE) $(TRADFLAG) 
-NETCDFPATH      =    /usr
+NETCDFPATH      =    $(NETCDF_HOME)
 HDF5PATH        =    
 WRFPLUSPATH     =    
 PNETCDFPATH     =    
