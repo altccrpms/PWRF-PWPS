@@ -1,11 +1,11 @@
-%global shortname WRF-WPS 
-%global ver 3.8.1
+%global shortname PWRF-PWPS 
+%global ver 3.7.1
 %?altcc_init
 
 Name:           %{shortname}%{?altcc_pkg_suffix}
 Version:        %{ver}
 Release:        1%{?dist}
-Summary:        WRF Model and WPS tools
+Summary:        Polar WRF Model and WPS tools
 
 License:        Public Domain
 URL:            http://www.wrf-model.org/
@@ -16,6 +16,7 @@ Source1:        configure.wrf-gfortran
 Source2:        configure.wrf-pgf
 Source3:        configure.wrf-intel
 Source4:        wrf.module.in
+Source5:        PWRF.3.7.1.tar.gz
 Source10:       http://www2.mmm.ucar.edu/wrf/src/WPSV%{version}.TAR.gz
 #This was created using the configure script and then modifying the
 #result
@@ -40,29 +41,35 @@ BuildRequires:  numactl-devel
 BuildRequires:  time
 
 %description
-WRF/WPS build.  They need to be built together which is why we have one
+Polar WRF/WPS build.  They need to be built together which is why we have one
 srpm.
 
 
-%package -n WRF%{?altcc_pkg_suffix}
+%package -n PWRF%{?altcc_pkg_suffix}
 Summary:        WRF Model
 %{?altcc_reqmodules}
-%{?altcc_provide:%altcc_provide -n WRF}
+%{?altcc_provide:%altcc_provide -n PWRF}
 
-%description -n WRF%{?altcc_pkg_suffix}
-WRF Model.
+%description -n PWRF%{?altcc_pkg_suffix}
+Polar WRF Model.
 
 
-%package -n WPS%{?altcc_pkg_suffix}
-Summary:        WPS Tools
-%{?altcc_provide:%altcc_provide -n WPS}
+%package -n PWPS%{?altcc_pkg_suffix}
+Summary:        Polar WPS Tools
+%{?altcc_provide:%altcc_provide -n PWPS}
 
-%description -n WPS%{?altcc_pkg_suffix}
-WPS Tools.
+%description -n PWPS%{?altcc_pkg_suffix}
+Polar WPS Tools.
 
 
 %prep
 %setup -q -c -a 10
+# Install PWRF files
+find -name \*.PWRF%{version} | while read f
+do
+  name=${f/.PWRF%{version}/}
+  cp -p $f WRFV3/${name}
+done
 %patch2 -p1 -b .netcdf
 pushd WRFV3
 [ -z "${COMPILER_NAME}" ] && export COMPILER_NAME=gfortran
@@ -123,7 +130,7 @@ chmod +x %{buildroot}%{_bindir}/setupwrf
 %{?altcc:%altcc_writemodule %SOURCE4}
 
 
-%files -n WRF%{?altcc_pkg_suffix}
+%files -n PWRF%{?altcc_pkg_suffix}
 #doc
 %{?altcc:%altcc_files -m %{_bindir} %{_datadir}}
 %{_bindir}/ndown.exe
@@ -138,7 +145,7 @@ chmod +x %{buildroot}%{_bindir}/setupwrf
 %{_datadir}/WRFV3/test/
 
 
-%files -n WPS%{?altcc_pkg_suffix}
+%files -n PWPS%{?altcc_pkg_suffix}
 #doc
 %{?altcc:%altcc_files %{_bindir} %{_datadir}}
 %{_bindir}/avg_tsfc.exe
@@ -160,6 +167,9 @@ chmod +x %{buildroot}%{_bindir}/setupwrf
 
 
 %changelog
+* Mon Oct 3 2016 Orion Poplawski <orion@cora.nwra.com> 3.7.1-1
+- Polar WRF variant
+
 * Thu Sep 29 2016 Orion Poplawski <orion@cora.nwra.com> 3.8.1-1
 - Update to 3.8.1
 - Compile with -ipo for Intel version
